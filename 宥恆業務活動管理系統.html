@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>宥恆資產管理顧問 — 業務活動系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#F7F5F0; --surface:#FFF; --surface2:#F2F0EB; --border:#E4E0D6;
+  --text:#1A1A1A; --text2:#555550; --text3:#9E9B90;
+  --gold:#B8962A; --gold2:#D4AE3A; --gold-pale:#F5EDD0; --gold-bdr:#DBBE62;
+  --red:#C0392B; --red-pale:#FDE8E6; --green:#1E6B45; --green-pale:#E6F2EC; --blue:#1A3A5C;
+  --r:8px; --r2:12px; --safe:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:14px;}
+
+/* HDR */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.hdr-brand{display:flex;align-items:center;gap:10px;}
+.hdr-mark{width:32px;height:32px;border-radius:4px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.hdr-name{font-size:13px;font-weight:700;letter-spacing:.3px;line-height:1.3;}
+.hdr-en{font-size:9px;color:var(--text3);letter-spacing:1px;}
+.sync-chip{display:flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--text2);}
+.sdot{width:6px;height:6px;border-radius:50%;background:#27ae60;flex-shrink:0;}
+.sdot.syncing{background:var(--gold);animation:blink 1s infinite;}
+.sdot.error{background:var(--red);}
+.sdot.offline{background:var(--border);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TABS */
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:68px;padding:11px 4px;text-align:center;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none;}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
+
+.off-bar{background:#FFF8E1;border-bottom:1px solid #FFE082;color:#7A6000;padding:8px 16px;font-size:12px;display:none;align-items:center;gap:6px;}
+.off-bar.show{display:flex;}
+
+/* LAYOUT */
+.main{padding:14px 14px calc(20px + var(--safe));max-width:600px;margin:0 auto;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:12px;overflow:hidden;}
+.card-hd{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface2);}
+.card-hd-bar{width:3px;height:13px;border-radius:2px;background:var(--gold);flex-shrink:0;}
+.card-hd-ttl{font-size:12px;font-weight:700;color:var(--text);letter-spacing:.5px;flex:1;}
+.card-bd{padding:14px 16px;}
+
+/* FORM */
+.grid{display:grid;gap:10px;}
+.g2{grid-template-columns:1fr 1fr;}
+.g3{grid-template-columns:1fr 1fr 1fr;}
+.fld{display:flex;flex-direction:column;gap:4px;}
+.fld label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
+.fld input,.fld select,.fld textarea{padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:14px;font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(--text);transition:border-color .15s,box-shadow .15s;width:100%;appearance:none;-webkit-appearance:none;}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239E9B90' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,42,.1);}
+.fld input[type="number"]{font-family:'DM Mono',monospace;}
+.fld textarea{resize:vertical;min-height:72px;}
+.fld input.err-in{border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.1);}
+.err-msg{font-size:11px;color:var(--red);margin-top:3px;display:none;}
+.err-msg.on{display:block;}
+.auto-in{background:var(--gold-pale)!important;border-color:var(--gold-bdr)!important;color:var(--gold)!important;font-weight:600;font-family:'DM Mono',monospace;}
+.sep{height:1px;background:var(--border);margin:12px 0;}
+
+/* BTN */
+.btn{padding:12px 18px;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;border:none;font-family:'Noto Sans TC',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px;user-select:none;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-gold{background:var(--gold);color:#fff;width:100%;}
+.btn-gold:active:not(:disabled){background:var(--gold2);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:active{background:var(--surface2);}
+.btn-red{background:var(--red-pale);border:1px solid #F5C0BB;color:var(--red);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;display:none;}
+.spin.on{display:block;}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(18px + var(--safe));left:50%;transform:translateX(-50%) translateY(6px);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* PERIOD TABS */
+.ptabs{display:flex;gap:6px;margin-bottom:12px;}
+.ptab{flex:1;padding:8px 4px;text-align:center;font-size:12px;font-weight:700;border-radius:var(--r);cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--surface);transition:all .15s;user-select:none;}
+.ptab.active{background:var(--gold);color:#fff;border-color:var(--gold);}
+
+/* METRICS */
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.mc.gold{background:var(--gold-pale);border-color:var(--gold-bdr);}
+.mc-lbl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:4px;}
+.mc-val{font-size:21px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);}
+.mc-val.c-gold{color:var(--gold);}
+.mc-val.c-blue{color:var(--blue);}
+.mc-val.c-green{color:var(--green);}
+
+/* RATE PILLS */
+.rpills{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.rpill{padding:3px 9px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);font-size:11px;color:var(--text2);}
+.rpill b{color:var(--text);}
+
+/* STAFF ITEMS */
+.si{padding:11px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.si:last-child{border-bottom:none;}
+.si-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.si-nums{display:flex;gap:12px;flex-shrink:0;}
+.si-n{text-align:right;}
+.si-v{font-size:16px;font-weight:700;font-family:'DM Mono',monospace;}
+.si-v.c-gold{color:var(--gold);}
+.si-l{font-size:10px;color:var(--text3);}
+
+/* PODIUM */
+.podium{display:flex;gap:8px;margin-bottom:4px;}
+.pod{flex:1;border-radius:var(--r2);border:1px solid var(--border);background:var(--surface);padding:14px 8px 12px;text-align:center;}
+.pod.p1{background:linear-gradient(155deg,#FFFCF0,#FFF4CC);border-color:var(--gold-bdr);}
+.pod-medal{font-size:24px;line-height:1;margin-bottom:6px;}
+.pod-name{font-size:13px;font-weight:700;margin-bottom:4px;}
+.pod-amt{font-size:19px;font-weight:700;font-family:'DM Mono',monospace;color:var(--gold);}
+.pod-unit{font-size:10px;color:var(--text3);}
+.pod-deal{font-size:11px;color:var(--text2);margin-top:3px;}
+
+/* LB TABLE */
+.lb-wrap{overflow-x:auto;}
+.lb-tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:340px;}
+.lb-tbl th{padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.lb-tbl td{padding:10px 10px;border-bottom:1px solid var(--border);}
+.lb-tbl tr:last-child td{border-bottom:none;}
+.lb-tbl tr:hover td{background:var(--bg);}
+.rk{font-size:11px;font-weight:700;color:var(--text3);}
+
+/* HISTORY */
+.ht-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.ht{width:100%;border-collapse:collapse;font-size:12px;min-width:760px;}
+.ht th{background:var(--surface2);padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.ht td{padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
+.ht tr:last-child td{border-bottom:none;}
+.bdg{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+.bdg-gold{background:var(--gold-pale);color:var(--gold);}
+.bdg-green{background:var(--green-pale);color:var(--green);}
+.edit-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--text2);cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.edit-btn:active{background:var(--surface2);}
+
+/* FILTER BAR */
+.fbar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;}
+.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.frow label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;white-space:nowrap;text-transform:uppercase;}
+.frow input,.frow select{flex:1;min-width:0;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(--text);appearance:none;-webkit-appearance:none;}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:flex-end;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:var(--surface);border-radius:var(--r2) var(--r2) 0 0;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:20px 16px calc(20px + var(--safe));}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px;}
+.modal .grid{margin-bottom:10px;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;}
+.modal-actions .btn{flex:1;}
+
+.empty{text-align:center;padding:36px 20px;color:var(--text3);}
+.empty .ei{font-size:28px;margin-bottom:8px;}
+.empty p{font-size:13px;}
+
+@media(min-width:480px){.mrow{grid-template-columns:repeat(4,1fr);}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-brand">
+    <div class="hdr-mark">宥恆</div>
+    <div>
+      <div class="hdr-name">宥恆資產管理顧問有限公司</div>
+      <div class="hdr-en">YU HENG ASSET MANAGEMENT CONSULTING</div>
+    </div>
+  </div>
+  <div class="sync-chip"><div class="sdot" id="sdot"></div><span id="stxt">連線中</span></div>
+</div>
+<div class="off-bar" id="offBar">⚠ 目前離線，顯示本機快取資料</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="go('input')">填寫活動</div>
+  <div class="tab" onclick="go('analysis')">數據分析</div>
+  <div class="tab" onclick="go('leaderboard')">業績戰報</div>
+  <div class="tab" onclick="go('history')">歷史紀錄</div>
+</div>
+
+<div class="main">
+
+<!-- ══ INPUT ══ -->
+<div class="panel active" id="panel-input">
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-bar"></div><div class="card-hd-ttl">基本資訊</div></div>
+    <div class="card-bd">
+      <div class="grid g2">
+        <div class="fld">
+          <label>業務姓名</label>
+          <select id="f-name">
+            <option value="">請選擇</option>
+            <option value="劉宥娜">劉宥娜</option>
+            <option value="朱晨希">朱晨希</option>
+            <option value="劉又禎">劉又禎</option>
+            <option value="楊崧凱">楊崧凱</option>
+            <option value="林芳伃">林芳伃</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="fld"><label>日期</label><input type="date" id="f-date"/></div>
+      </div>
+      <div class="fld" id="other-wrap" style="margin-top:10px;display:none;">
+        <label>輸入姓名</label>
+        <input type="text" id="f-other" placeholder="請輸入姓名"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-bar"></div><div class="card-hd-ttl">開發量能</div></div>
+    <div class="card-bd">
+      <div class="grid g2">
+        <div class="fld"><label>撥通數</label><input type="number" id="f-dial" placeholder="0" min="0" inputmode="numeric" oninput="checkConn()"/></div>
+        <div class="fld">
+          <label>接通數</label>
+          <input type="number" id="f-connect" placeholder="0" min="0" inputmode="numeric" oninput="checkConn()"/>
+          <span class="err-msg" id="conn-err">接通數不得大於撥通數</span>
+        </div>
+        <div class="fld"><label>約到數</label><input type="number" id="f-appoint" placeholder="0" min="0" inputmode="numeric"/></div>
+        <div class="fld"><label>帶看數</label><input type="number" id="f-show" placeholder="0" min="0" inputmode="numeric"/></div>
+        <div class="fld"><label>接案數</label><input type="number" id="f-take" placeholder="0" min="0" inputmode="numeric"/></div>
+        <div class="fld"><label>來電客</label><input type="number" id="f-inbound" placeholder="0" min="0" inputmode="numeric"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-bar" style="background:var(--gold)"></div><div class="card-hd-ttl">成交收定</div></div>
+    <div class="card-bd">
+      <div class="grid g2">
+        <div class="fld"><label>斡旋件數</label><input type="number" id="f-mediate-cnt" placeholder="0" min="0" inputmode="numeric"/></div>
+        <div class="fld"><label>收定件數</label><input type="number" id="f-deal-cnt" placeholder="0" min="0" inputmode="numeric"/></div>
+        <div class="fld"><label>斡旋總額（萬）</label><input type="number" id="f-mediate-amt" placeholder="0" min="0" inputmode="decimal"/></div>
+        <div class="fld"><label>業績總額（萬）</label><input type="number" id="f-perf-amt" placeholder="0" min="0" inputmode="decimal"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-bar" style="background:var(--blue)"></div><div class="card-hd-ttl">銷售庫存</div></div>
+    <div class="card-bd">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:8px;">各平台貼文數</div>
+      <div class="grid g2">
+        <div class="fld"><label>591 廣告</label><input type="number" id="f-inv-591" placeholder="0" min="0" inputmode="numeric" oninput="calcInv()"/></div>
+        <div class="fld"><label>Threads</label><input type="number" id="f-inv-threads" placeholder="0" min="0" inputmode="numeric" oninput="calcInv()"/></div>
+        <div class="fld"><label>Facebook</label><input type="number" id="f-inv-fb" placeholder="0" min="0" inputmode="numeric" oninput="calcInv()"/></div>
+        <div class="fld"><label>其他社群</label><input type="number" id="f-inv-other" placeholder="0" min="0" inputmode="numeric" oninput="calcInv()"/></div>
+      </div>
+      <div class="sep"></div>
+      <div class="grid g2">
+        <div class="fld"><label>貼文總量（自動）</label><input type="number" id="f-inv-total" class="auto-in" readonly/></div>
+        <div class="fld"><label>實際案件數（手動）</label><input type="number" id="f-inv-actual" placeholder="0" min="0" inputmode="numeric"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-bar" style="background:var(--green)"></div><div class="card-hd-ttl">定聯經營</div></div>
+    <div class="card-bd">
+      <div class="grid g2">
+        <div class="fld"><label>屋主經營</label><input type="number" id="f-crm-owner" placeholder="0" min="0" inputmode="numeric" oninput="calcCrm()"/></div>
+        <div class="fld"><label>租客經營</label><input type="number" id="f-crm-tenant" placeholder="0" min="0" inputmode="numeric" oninput="calcCrm()"/></div>
+        <div class="fld"><label>管理員經營</label><input type="number" id="f-crm-admin" placeholder="0" min="0" inputmode="numeric" oninput="calcCrm()"/></div>
+        <div class="fld"><label>同業經營</label><input type="number" id="f-crm-peer" placeholder="0" min="0" inputmode="numeric" oninput="calcCrm()"/></div>
+        <div class="fld"><label>其他經營</label><input type="number" id="f-crm-other" placeholder="0" min="0" inputmode="numeric" oninput="calcCrm()"/></div>
+        <div class="fld"><label>客戶轉財顧</label><input type="number" id="f-crm-fa" placeholder="0" min="0" inputmode="numeric" oninput="calcCrm()"/></div>
+      </div>
+      <div class="sep"></div>
+      <div class="grid g2">
+        <div class="fld"><label>總定聯數（自動）</label><input type="number" id="f-crm-total" class="auto-in" readonly/></div>
+        <div class="fld"><label>財顧預約諮詢</label><input type="number" id="f-crm-consult" placeholder="0" min="0" inputmode="numeric"/></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-bar" style="background:var(--text3)"></div><div class="card-hd-ttl">備註留言</div></div>
+    <div class="card-bd"><div class="fld"><textarea id="f-note" placeholder="今日備註或特殊事項…"></textarea></div></div>
+  </div>
+
+  <button class="btn btn-gold" id="btn-save" onclick="saveRecord()"><div class="spin" id="save-spin"></div>儲存今日活動紀錄</button>
+  <button class="btn btn-ghost" onclick="clearForm()" style="width:100%;margin-top:8px;">清除表單</button>
+</div>
+
+<!-- ══ ANALYSIS ══ -->
+<div class="panel" id="panel-analysis">
+  <div class="fbar">
+    <div class="frow">
+      <label>篩選業務</label>
+      <select id="a-name" onchange="renderAnalysis()">
+        <option value="">全部人員</option>
+        <option>劉宥娜</option><option>朱晨希</option>
+        <option>劉又禎</option><option>楊崧凱</option><option>林芳伃</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="refreshData()">↻</button>
+    </div>
+  </div>
+  <div class="ptabs">
+    <div class="ptab active" onclick="setPeriod('a','day',this)">當日</div>
+    <div class="ptab" onclick="setPeriod('a','month',this)">當月</div>
+    <div class="ptab" onclick="setPeriod('a','quarter',this)">當季</div>
+    <div class="ptab" onclick="setPeriod('a','year',this)">當年</div>
+  </div>
+  <div id="a-content"><div class="empty"><div class="ei">📊</div><p>載入中…</p></div></div>
+</div>
+
+<!-- ══ LEADERBOARD ══ -->
+<div class="panel" id="panel-leaderboard">
+  <div class="fbar">
+    <div class="frow">
+      <label>業績戰報</label>
+      <button class="btn btn-ghost btn-sm" onclick="refreshData()">↻ 更新資料</button>
+    </div>
+  </div>
+  <div class="ptabs">
+    <div class="ptab active" onclick="setPeriod('lb','day',this)">當日</div>
+    <div class="ptab" onclick="setPeriod('lb','month',this)">當月</div>
+    <div class="ptab" onclick="setPeriod('lb','quarter',this)">當季</div>
+    <div class="ptab" onclick="setPeriod('lb','year',this)">當年</div>
+  </div>
+  <div id="lb-content"><div class="empty"><div class="ei">🏆</div><p>載入中…</p></div></div>
+</div>
+
+<!-- ══ HISTORY ══ -->
+<div class="panel" id="panel-history">
+  <div class="fbar">
+    <div class="frow">
+      <label>姓名</label>
+      <select id="h-name" onchange="renderHistory()">
+        <option value="">全部</option>
+        <option>劉宥娜</option><option>朱晨希</option>
+        <option>劉又禎</option><option>楊崧凱</option><option>林芳伃</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="refreshData()">↻</button>
+    </div>
+    <div class="frow">
+      <input type="date" id="h-from" onchange="renderHistory()" style="flex:1;"/>
+      <span style="font-size:12px;color:var(--text3);">至</span>
+      <input type="date" id="h-to" onchange="renderHistory()" style="flex:1;"/>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-bd" style="padding:0;">
+      <div class="ht-wrap">
+        <table class="ht">
+          <thead><tr>
+            <th>操作</th><th>日期</th><th>姓名</th>
+            <th>撥通</th><th>接通</th><th>接通率</th>
+            <th>約到</th><th>約到率</th><th>帶看</th><th>帶看率</th>
+            <th>收定</th><th>成交率</th>
+            <th>業績(萬)</th><th>接案</th><th>定聯</th><th>庫存</th>
+          </tr></thead>
+          <tbody id="h-body"><tr><td colspan="16" style="text-align:center;padding:24px;color:var(--text3);">載入中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ EDIT MODAL ══ -->
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-title">
+      <span>編輯紀錄</span>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:10px;">
+      <div class="fld"><label>業務姓名</label>
+        <select id="m-name">
+          <option>劉宥娜</option><option>朱晨希</option>
+          <option>劉又禎</option><option>楊崧凱</option><option>林芳伃</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="fld"><label>日期</label><input type="date" id="m-date"/></div>
+    </div>
+    <div class="fld" id="m-other-wrap" style="margin-bottom:10px;display:none;">
+      <label>輸入姓名</label><input type="text" id="m-other" placeholder="請輸入姓名"/>
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:6px;">開發量能</div>
+    <div class="grid g2" style="margin-bottom:10px;">
+      <div class="fld"><label>撥通數</label><input type="number" id="m-dial" min="0" inputmode="numeric" oninput="checkMConn()"/></div>
+      <div class="fld"><label>接通數</label><input type="number" id="m-connect" min="0" inputmode="numeric" oninput="checkMConn()"/>
+        <span class="err-msg" id="m-conn-err">接通數不得大於撥通數</span>
+      </div>
+      <div class="fld"><label>約到數</label><input type="number" id="m-appoint" min="0" inputmode="numeric"/></div>
+      <div class="fld"><label>帶看數</label><input type="number" id="m-show" min="0" inputmode="numeric"/></div>
+      <div class="fld"><label>接案數</label><input type="number" id="m-take" min="0" inputmode="numeric"/></div>
+      <div class="fld"><label>來電客</label><input type="number" id="m-inbound" min="0" inputmode="numeric"/></div>
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:6px;">成交收定</div>
+    <div class="grid g2" style="margin-bottom:10px;">
+      <div class="fld"><label>斡旋件數</label><input type="number" id="m-mediate-cnt" min="0" inputmode="numeric"/></div>
+      <div class="fld"><label>收定件數</label><input type="number" id="m-deal-cnt" min="0" inputmode="numeric"/></div>
+      <div class="fld"><label>斡旋總額(萬)</label><input type="number" id="m-mediate-amt" min="0" inputmode="decimal"/></div>
+      <div class="fld"><label>業績總額(萬)</label><input type="number" id="m-perf-amt" min="0" inputmode="decimal"/></div>
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:6px;">銷售庫存 — 各平台貼文數</div>
+    <div class="grid g2" style="margin-bottom:10px;">
+      <div class="fld"><label>591 廣告</label><input type="number" id="m-inv-591" min="0" inputmode="numeric" oninput="calcMInv()"/></div>
+      <div class="fld"><label>Threads</label><input type="number" id="m-inv-threads" min="0" inputmode="numeric" oninput="calcMInv()"/></div>
+      <div class="fld"><label>Facebook</label><input type="number" id="m-inv-fb" min="0" inputmode="numeric" oninput="calcMInv()"/></div>
+      <div class="fld"><label>其他社群</label><input type="number" id="m-inv-other" min="0" inputmode="numeric" oninput="calcMInv()"/></div>
+      <div class="fld"><label>貼文總量（自動）</label><input type="number" id="m-inv-total" class="auto-in" readonly/></div>
+      <div class="fld"><label>實際案件數（手動）</label><input type="number" id="m-inv-actual" min="0" inputmode="numeric" placeholder="0"/></div>
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;margin-bottom:6px;">定聯經營</div>
+    <div class="grid g2" style="margin-bottom:10px;">
+      <div class="fld"><label>屋主經營</label><input type="number" id="m-crm-owner" min="0" inputmode="numeric" oninput="calcMCrm()"/></div>
+      <div class="fld"><label>租客經營</label><input type="number" id="m-crm-tenant" min="0" inputmode="numeric" oninput="calcMCrm()"/></div>
+      <div class="fld"><label>管理員經營</label><input type="number" id="m-crm-admin" min="0" inputmode="numeric" oninput="calcMCrm()"/></div>
+      <div class="fld"><label>同業經營</label><input type="number" id="m-crm-peer" min="0" inputmode="numeric" oninput="calcMCrm()"/></div>
+      <div class="fld"><label>其他經營</label><input type="number" id="m-crm-other" min="0" inputmode="numeric" oninput="calcMCrm()"/></div>
+      <div class="fld"><label>客戶轉財顧</label><input type="number" id="m-crm-fa" min="0" inputmode="numeric" oninput="calcMCrm()"/></div>
+      <div class="fld"><label>總定聯數</label><input type="number" id="m-crm-total" class="auto-in" readonly/></div>
+      <div class="fld"><label>財顧預約諮詢</label><input type="number" id="m-crm-consult" min="0" inputmode="numeric" placeholder="0"/></div>
+    </div>
+
+    <div class="fld" style="margin-bottom:16px;"><label>備註留言</label><textarea id="m-note" style="min-height:60px;"></textarea></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModalDirect()">取消</button>
+      <button class="btn btn-gold" id="modal-save-btn" onclick="saveEdit()"><div class="spin" id="modal-spin"></div>儲存變更</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbzK8x_VLNWffw5LAkz7ttoBl1ITv3rz_89TVjI77RxRQHluNkPkhha3wiV2nPTSERWZ/exec';
+const LS='yuheng_v4';
+let cache=[]; let isOnline=navigator.onLine;
+let aPeriod='day', lbPeriod='day';
+let editingId=null;
+
+// ── sync ──
+function syncUI(s){
+  const d=document.getElementById('sdot'),t=document.getElementById('stxt');
+  d.className='sdot'+(s!=='ok'?' '+s:'');
+  t.textContent={ok:'已連線',syncing:'同步中…',error:'連線失敗',offline:'離線模式'}[s]||s;
+}
+window.addEventListener('online',()=>{isOnline=true;syncUI('ok');document.getElementById('offBar').classList.remove('show');refreshData();});
+window.addEventListener('offline',()=>{isOnline=false;syncUI('offline');document.getElementById('offBar').classList.add('show');});
+
+function showToast(m,ok=true){const t=document.getElementById('toast');t.textContent=m;t.style.background=ok?'#1A1A1A':'#C0392B';t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3200);}
+function lsave(d){try{localStorage.setItem(LS,JSON.stringify(d));}catch{}}
+function lload(){try{const d=localStorage.getItem(LS);return d?JSON.parse(d):[];}catch{return[];}}
+
+// ── fetch ──
+async function fetchSheets(){
+  syncUI('syncing');
+  try{
+    const r=await fetch(API+'?t='+Date.now(),{cache:'no-store'});
+    const raw=await r.json();
+    cache=raw.map(x=>({
+      id:String(x['ID']||x['id']||''), date:String(x['日期']||'').substring(0,10), name:x['姓名']||'',
+      dial:+x['撥通數']||0, connect:+x['接通數']||0, reject:+x['拒絕數']||0,
+      appoint:+x['約到數']||0, show:+x['帶看數']||0, take:+x['接案數']||0, inbound:+x['來電客']||0,
+      mediatetCnt:+x['斡旋件數']||0, dealCnt:+x['收定件數']||0,
+      mediateAmt:+x['斡旋總額(萬)']||0, perfAmt:+x['業績總額(萬)']||0,
+      inv591:+x['591廣告']||0, invThreads:+x['Threads']||0, invFb:+x['Facebook']||0, invOther:+x['其他社群']||0,
+      invTotal:+x['庫存總量']||0, invActual:+x['實際案件數']||0,
+      crmOwner:+x['屋主經營']||0, crmTenant:+x['租客經營']||0, crmAdmin:+x['管理員經營']||0, crmPeer:+x['同業經營']||0, crmOther:+x['其他經營']||0, crmFa:+x['客戶轉財顧']||0, crmConsult:+x['財顧預約諮詢']||0,
+      note:x['備註']||''
+    })).filter(r=>r.date&&r.name);
+    lsave(cache); syncUI('ok'); return true;
+  }catch(e){syncUI('error'); cache=lload(); return false;}
+}
+
+async function refreshData(){
+  const ok=await fetchSheets();
+  if(!ok)showToast('無法連線，顯示本機資料',false);
+  renderHistory(); renderAnalysis(); renderLB();
+}
+
+// ── helpers ──
+function getRange(p){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),d=now.getDate();
+  const z=n=>String(n).padStart(2,'0');
+  if(p==='day'){const s=`${y}-${z(m+1)}-${z(d)}`;return{from:s,to:s};}
+  if(p==='month')return{from:`${y}-${z(m+1)}-01`,to:`${y}-${z(m+1)}-${z(d)}`};
+  if(p==='quarter'){const qm=Math.floor(m/3)*3;return{from:`${y}-${z(qm+1)}-01`,to:`${y}-${z(m+1)}-${z(d)}`};}
+  return{from:`${y}-01-01`,to:`${y}-${z(m+1)}-${z(d)}`};
+}
+function pLabel(p){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),d=now.getDate();
+  if(p==='day')return`${y}/${m+1}/${d}`;
+  if(p==='month')return`${y} 年 ${m+1} 月`;
+  if(p==='quarter')return`${y} 年 Q${Math.floor(m/3)+1}`;
+  return`${y} 年`;
+}
+function filterP(recs,p,name){
+  const{from,to}=getRange(p);
+  return recs.filter(r=>r.date>=from&&r.date<=to&&(!name||r.name===name));
+}
+function aggR(recs){
+  return recs.reduce((a,r)=>({
+    dial:a.dial+r.dial, connect:a.connect+r.connect,
+    appoint:a.appoint+r.appoint, show:a.show+r.show,
+    inbound:a.inbound+r.inbound,
+    take:a.take+r.take, dealCnt:a.dealCnt+r.dealCnt, perfAmt:a.perfAmt+r.perfAmt,
+    crmTotal:a.crmTotal+(r.crmOwner+r.crmTenant+r.crmAdmin+r.crmPeer+r.crmOther)
+  }),{dial:0,connect:0,appoint:0,show:0,inbound:0,take:0,dealCnt:0,perfAmt:0,crmTotal:0});
+}
+function pct(a,b){if(!b)return'—';return(a/b*100).toFixed(1)+'%';}
+function nv(id){const v=document.getElementById(id)?.value;return(!v||v==='')?0:parseFloat(v)||0;}
+
+function setPeriod(panel,p,el){
+  el.parentElement.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(panel==='a'){aPeriod=p;renderAnalysis();}
+  else{lbPeriod=p;renderLB();}
+}
+
+// ── analysis ──
+function renderAnalysis(){
+  const name=document.getElementById('a-name').value;
+  const recs=filterP(cache,aPeriod,name);
+  const el=document.getElementById('a-content'),lbl=pLabel(aPeriod);
+  if(!recs.length){el.innerHTML=`<div class="empty"><div class="ei">📋</div><p>「${lbl}」無活動紀錄</p></div>`;return;}
+  const a=aggR(recs);
+  const names=[...new Set(recs.map(r=>r.name))];
+  const staffHTML=names.map(nm=>{
+    const rs=recs.filter(r=>r.name===nm),sa=aggR(rs);
+    return`<div class="si">
+      <div style="flex:1;min-width:0;">
+        <div class="si-name">${nm}</div>
+        <div class="rpills">
+          <div class="rpill">接通 <b>${pct(sa.connect,sa.dial)}</b></div>
+          <div class="rpill">約到 <b>${pct(sa.appoint,sa.connect)}</b></div>
+          <div class="rpill">帶看 <b>${pct(sa.show,sa.inbound)}</b></div>
+          <div class="rpill">成交 <b>${pct(sa.dealCnt,sa.show)}</b></div>
+        </div>
+      </div>
+      <div class="si-nums">
+        <div class="si-n"><div class="si-v c-gold">${sa.perfAmt.toLocaleString()}</div><div class="si-l">業績(萬)</div></div>
+        <div class="si-n"><div class="si-v">${sa.dealCnt}</div><div class="si-l">收定</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-hd"><div class="card-hd-bar"></div><div class="card-hd-ttl">彙總 — ${lbl}</div></div>
+      <div class="card-bd">
+        <div class="mrow">
+          <div class="mc gold"><div class="mc-lbl">總業績（萬）</div><div class="mc-val c-gold">${a.perfAmt.toLocaleString()}</div></div>
+          <div class="mc"><div class="mc-lbl">成交件數</div><div class="mc-val c-green">${a.dealCnt}</div></div>
+          <div class="mc"><div class="mc-lbl">接案件數</div><div class="mc-val">${a.take}</div></div>
+          <div class="mc"><div class="mc-lbl">總定聯數</div><div class="mc-val">${a.crmTotal}</div></div>
+        </div>
+        <div class="mrow" style="margin-bottom:0;">
+          <div class="mc"><div class="mc-lbl">接通率</div><div class="mc-val c-blue">${pct(a.connect,a.dial)}</div></div>
+          <div class="mc"><div class="mc-lbl">約到率</div><div class="mc-val c-blue">${pct(a.appoint,a.connect)}</div></div>
+          <div class="mc"><div class="mc-lbl">帶看率</div><div class="mc-val c-blue">${pct(a.show,a.inbound)}</div></div>
+          <div class="mc"><div class="mc-lbl">成交率</div><div class="mc-val c-blue">${pct(a.dealCnt,a.show)}</div></div>
+        </div>
+      </div>
+    </div>
+    ${names.length>1?`<div class="card"><div class="card-hd"><div class="card-hd-bar" style="background:var(--gold)"></div><div class="card-hd-ttl">個別業務明細</div></div><div class="card-bd">${staffHTML}</div></div>`:''}`;
+}
+
+// ── leaderboard ──
+function renderLB(){
+  const recs=filterP(cache,lbPeriod,'');
+  const el=document.getElementById('lb-content'),lbl=pLabel(lbPeriod);
+  if(!recs.length){el.innerHTML=`<div class="empty"><div class="ei">🏆</div><p>「${lbl}」無業績資料</p></div>`;return;}
+  const names=[...new Set(recs.map(r=>r.name))];
+  const ranked=names.map(nm=>{const rs=recs.filter(r=>r.name===nm);return{name:nm,...aggR(rs)};}).sort((a,b)=>b.perfAmt-a.perfAmt);
+  const medals=['🥇','🥈','🥉'];
+  const top3=ranked.slice(0,3);
+  const podHTML=top3.map((p,i)=>`
+    <div class="pod${i===0?' p1':''}">
+      <div class="pod-medal">${medals[i]}</div>
+      <div class="pod-name">${p.name}</div>
+      <div class="pod-amt">${p.perfAmt.toLocaleString()}</div>
+      <div class="pod-unit">萬元</div>
+      <div class="pod-deal">${p.dealCnt} 件收定</div>
+    </div>`).join('');
+  const rows=ranked.map((p,i)=>`<tr>
+    <td><span class="rk">${i<3?medals[i]:i+1}</span></td>
+    <td><strong>${p.name}</strong></td>
+    <td style="font-family:'DM Mono',monospace;color:var(--gold);font-weight:700;">${p.perfAmt.toLocaleString()}</td>
+    <td>${p.dealCnt}</td><td>${p.take}</td>
+    <td>${pct(p.connect,p.dial)}</td><td>${pct(p.dealCnt,p.show)}</td>
+  </tr>`).join('');
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-hd"><div class="card-hd-bar" style="background:var(--gold)"></div><div class="card-hd-ttl">業績排行 TOP 3 — ${lbl}</div></div>
+      <div class="card-bd"><div class="podium">${podHTML}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-bar"></div><div class="card-hd-ttl">完整排名</div></div>
+      <div class="card-bd" style="padding:0;">
+        <div class="lb-wrap">
+          <table class="lb-tbl">
+            <thead><tr><th>#</th><th>姓名</th><th>業績(萬)</th><th>收定</th><th>接案</th><th>接通率</th><th>成交率</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── history ──
+function renderHistory(){
+  const name=document.getElementById('h-name').value;
+  const from=document.getElementById('h-from').value,to=document.getElementById('h-to').value;
+  let recs=cache.filter(r=>(!name||r.name===name)&&(!from||r.date>=from)&&(!to||r.date<=to)).sort((a,b)=>b.date.localeCompare(a.date));
+  const tb=document.getElementById('h-body');
+  if(!recs.length){tb.innerHTML='<tr><td colspan="16"><div class="empty"><div class="ei">📂</div><p>無符合紀錄</p></div></td></tr>';return;}
+  tb.innerHTML=recs.map(r=>{
+    const crm=r.crmOwner+r.crmTenant+r.crmAdmin+r.crmPeer+r.crmOther;
+    return`<tr>
+      <td><button class="edit-btn" onclick="openEdit('${r.id}')">編輯</button></td>
+      <td>${r.date}</td><td><strong>${r.name}</strong></td>
+      <td>${r.dial}</td><td>${r.connect}</td>
+      <td style="color:var(--blue);font-weight:500;">${pct(r.connect,r.dial)}</td>
+      <td>${r.appoint}</td>
+      <td style="color:var(--blue);font-weight:500;">${pct(r.appoint,r.connect)}</td>
+      <td>${r.show}</td>
+      <td style="color:var(--blue);font-weight:500;">${pct(r.show,r.inbound)}</td>
+      <td><span class="bdg bdg-green">${r.dealCnt}</span></td>
+      <td style="color:var(--blue);font-weight:500;">${pct(r.dealCnt,r.show)}</td>
+      <td><span class="bdg bdg-gold">${r.perfAmt.toLocaleString()}</span></td>
+      <td>${r.take}</td><td>${crm}</td><td>${r.invTotal}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── edit modal ──
+function openEdit(id){
+  const r=cache.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  editingId=id;
+  const known=['劉宥娜','朱晨希','劉又禎','楊崧凱','林芳伃'];
+  const sel=document.getElementById('m-name');
+  if(known.includes(r.name)){sel.value=r.name;document.getElementById('m-other-wrap').style.display='none';}
+  else{sel.value='其他';document.getElementById('m-other').value=r.name;document.getElementById('m-other-wrap').style.display='block';}
+  document.getElementById('m-date').value=r.date;
+  const fields={dial:r.dial,connect:r.connect,appoint:r.appoint,show:r.show,take:r.take,inbound:r.inbound,
+    'mediate-cnt':r.mediatetCnt,'deal-cnt':r.dealCnt,'mediate-amt':r.mediateAmt,'perf-amt':r.perfAmt,
+    'inv-591':r.inv591,'inv-threads':r.invThreads,'inv-fb':r.invFb,'inv-other':r.invOther,
+    'inv-total':r.invTotal,'inv-actual':r.invActual||0,
+    'crm-owner':r.crmOwner,'crm-tenant':r.crmTenant,'crm-admin':r.crmAdmin,
+    'crm-peer':r.crmPeer,'crm-other':r.crmOther,'crm-fa':r.crmFa||0,'crm-consult':r.crmConsult||0};
+  Object.entries(fields).forEach(([k,v])=>{const e=document.getElementById('m-'+k);if(e)e.value=v||0;});
+  const ct=r.crmOwner+r.crmTenant+r.crmAdmin+r.crmPeer+r.crmOther;
+  document.getElementById('m-crm-total').value=ct;
+  document.getElementById('m-note').value=r.note||'';
+  document.getElementById('modal-bg').classList.add('on');
+}
+function closeModal(e){if(e.target===document.getElementById('modal-bg'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modal-bg').classList.remove('on');editingId=null;}
+
+document.getElementById('m-name').addEventListener('change',function(){
+  document.getElementById('m-other-wrap').style.display=this.value==='其他'?'block':'none';
+});
+function checkMConn(){
+  const d=nv('m-dial'),c=nv('m-connect'),bad=c>d&&d>0;
+  document.getElementById('m-conn-err').classList.toggle('on',bad);
+  document.getElementById('m-connect').classList.toggle('err-in',bad);
+}
+function calcMCrm(){document.getElementById('m-crm-total').value=nv('m-crm-owner')+nv('m-crm-tenant')+nv('m-crm-admin')+nv('m-crm-peer')+nv('m-crm-other');}
+
+// ── form+iframe submit (bypasses CORS, body is preserved) ──
+function submitToSheets(data, onSuccess){
+  return new Promise((resolve)=>{
+    const iframeId='_submit_frame_'+Date.now();
+    const iframe=document.createElement('iframe');
+    iframe.name=iframeId;
+    iframe.style.display='none';
+    document.body.appendChild(iframe);
+
+    const form=document.createElement('form');
+    form.method='POST';
+    form.action=API;
+    form.target=iframeId;
+    form.style.display='none';
+
+    const input=document.createElement('input');
+    input.type='hidden';
+    input.name='payload';
+    input.value=JSON.stringify(data);
+    form.appendChild(input);
+    document.body.appendChild(form);
+
+    // Apps Script receives e.parameter.payload
+    let done=false;
+    const finish=()=>{
+      if(done)return; done=true;
+      try{document.body.removeChild(form);}catch{}
+      try{document.body.removeChild(iframe);}catch{}
+      resolve(true);
+    };
+    iframe.onload=()=>{ setTimeout(finish,300); };
+    setTimeout(finish,8000); // fallback timeout
+    form.submit();
+    if(onSuccess)setTimeout(onSuccess,400);
+  });
+}
+
+async function saveEdit(){
+  if(!editingId)return;
+  const mSel=document.getElementById('m-name').value;
+  const name=mSel==='其他'?document.getElementById('m-other').value.trim():mSel;
+  const date=document.getElementById('m-date').value;
+  if(!name){showToast('請選擇姓名',false);return;}
+  if(!date){showToast('請選擇日期',false);return;}
+  if(nv('m-connect')>nv('m-dial')&&nv('m-dial')>0){showToast('接通數不得大於撥通數',false);return;}
+
+  const updated={
+    id:editingId, name, date,
+    dial:nv('m-dial'), connect:nv('m-connect'), reject:Math.max(0,nv('m-dial')-nv('m-connect')),
+    appoint:nv('m-appoint'), show:nv('m-show'), take:nv('m-take'), inbound:nv('m-inbound'),
+    mediatetCnt:nv('m-mediate-cnt'), dealCnt:nv('m-deal-cnt'),
+    mediateAmt:nv('m-mediate-amt'), perfAmt:nv('m-perf-amt'),
+    inv591:nv('m-inv-591'), invThreads:nv('m-inv-threads'), invFb:nv('m-inv-fb'), invOther:nv('m-inv-other'),
+    invTotal:nv('m-inv-total'), invActual:nv('m-inv-actual'),
+    crmOwner:nv('m-crm-owner'), crmTenant:nv('m-crm-tenant'), crmAdmin:nv('m-crm-admin'),
+    crmPeer:nv('m-crm-peer'), crmOther:nv('m-crm-other'), crmFa:nv('m-crm-fa'),
+    crmConsult:nv('m-crm-consult'),
+    note:document.getElementById('m-note').value.trim(),
+    _action:'update'
+  };
+
+  const btn=document.getElementById('modal-save-btn'),sp=document.getElementById('modal-spin');
+  btn.disabled=true; sp.classList.add('on');
+  try{
+    await submitToSheets(updated);
+    cache=cache.map(r=>String(r.id)===String(editingId)?{...r,...updated}:r);
+    lsave(cache);
+    closeModalDirect();
+    showToast('✓ 已更新紀錄');
+    renderHistory(); renderAnalysis(); renderLB();
+  }catch(e){showToast('更新失敗，請重試',false);}
+  finally{btn.disabled=false;sp.classList.remove('on');}
+}
+
+// ── save new ──
+document.getElementById('f-name').addEventListener('change',function(){document.getElementById('other-wrap').style.display=this.value==='其他'?'block':'none';});
+function getName(){const s=document.getElementById('f-name').value;return s==='其他'?document.getElementById('f-other').value.trim():s;}
+function checkConn(){
+  const d=nv('f-dial'),c=nv('f-connect'),bad=c>d&&d>0;
+  document.getElementById('conn-err').classList.toggle('on',bad);
+  document.getElementById('f-connect').classList.toggle('err-in',bad);
+}
+function calcInv(){document.getElementById('f-inv-total').value=nv('f-inv-591')+nv('f-inv-threads')+nv('f-inv-fb')+nv('f-inv-other');}
+function calcMInv(){document.getElementById('m-inv-total').value=nv('m-inv-591')+nv('m-inv-threads')+nv('m-inv-fb')+nv('m-inv-other');}
+function calcCrm(){document.getElementById('f-crm-total').value=nv('f-crm-owner')+nv('f-crm-tenant')+nv('f-crm-admin')+nv('f-crm-peer')+nv('f-crm-other')+nv('f-crm-fa');}
+function calcMCrm(){document.getElementById('m-crm-total').value=nv('m-crm-owner')+nv('m-crm-tenant')+nv('m-crm-admin')+nv('m-crm-peer')+nv('m-crm-other')+nv('m-crm-fa');}
+
+async function saveRecord(){
+  const name=getName(),date=document.getElementById('f-date').value;
+  if(!name){showToast('請選擇業務姓名',false);return;}
+  if(!date){showToast('請選擇日期',false);return;}
+  if(nv('f-connect')>nv('f-dial')&&nv('f-dial')>0){showToast('接通數不得大於撥通數',false);return;}
+
+  const rec={
+    id:Date.now(), name, date,
+    dial:nv('f-dial'), connect:nv('f-connect'), reject:Math.max(0,nv('f-dial')-nv('f-connect')),
+    appoint:nv('f-appoint'), show:nv('f-show'), take:nv('f-take'), inbound:nv('f-inbound'),
+    mediatetCnt:nv('f-mediate-cnt'), dealCnt:nv('f-deal-cnt'),
+    mediateAmt:nv('f-mediate-amt'), perfAmt:nv('f-perf-amt'),
+    inv591:nv('f-inv-591'), invThreads:nv('f-inv-threads'), invFb:nv('f-inv-fb'), invOther:nv('f-inv-other'),
+    invTotal:nv('f-inv-total'), invActual:nv('f-inv-actual'),
+    crmOwner:nv('f-crm-owner'), crmTenant:nv('f-crm-tenant'), crmAdmin:nv('f-crm-admin'),
+    crmPeer:nv('f-crm-peer'), crmOther:nv('f-crm-other'), crmFa:nv('f-crm-fa'),
+    crmConsult:nv('f-crm-consult'),
+    note:document.getElementById('f-note').value.trim()
+  };
+
+  const btn=document.getElementById('btn-save'),sp=document.getElementById('save-spin');
+  btn.disabled=true; sp.classList.add('on');
+  try{
+    await submitToSheets(rec);
+    showToast('✓ 已儲存至 Google Sheets');
+    clearForm();
+    cache.push(rec); lsave(cache);
+    renderAnalysis(); renderLB();
+  }catch(e){showToast('網路錯誤，請重試',false);syncUI('error');}
+  finally{btn.disabled=false;sp.classList.remove('on');}
+}
+
+function clearForm(){
+  document.getElementById('f-name').value='';
+  document.getElementById('other-wrap').style.display='none';
+  ['f-dial','f-connect','f-appoint','f-show','f-take','f-inbound','f-mediate-cnt','f-deal-cnt','f-mediate-amt','f-perf-amt',
+   'f-inv-591','f-inv-threads','f-inv-fb','f-inv-other','f-inv-total','f-inv-actual',
+   'f-crm-owner','f-crm-tenant','f-crm-admin','f-crm-peer','f-crm-other','f-crm-fa','f-crm-consult','f-crm-total','f-note']
+    .forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('conn-err').classList.remove('on');
+  document.getElementById('f-connect').classList.remove('err-in');
+}
+
+function go(tab){
+  const tabs=['input','analysis','leaderboard','history'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='history')renderHistory();
+  if(tab==='analysis')renderAnalysis();
+  if(tab==='leaderboard')renderLB();
+}
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  if(!isOnline){syncUI('offline');document.getElementById('offBar').classList.add('show');cache=lload();renderHistory();renderAnalysis();renderLB();}
+  else await refreshData();
+});
+</script>
+</body>
+</html>
